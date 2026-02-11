@@ -590,9 +590,19 @@ label {
 .spectator-list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
+  /* Increased gap */
   font-size: 12px;
   color: var(--text-muted);
+  width: 100%;
+  /* Ensure full width */
+}
+
+.spectator-item {
+  background: rgba(255, 255, 255, 0.03);
+  padding: 6px 10px;
+  width: 250px;
+  /* Fixed width for better look in panel */
 }
 
 .room-settings {

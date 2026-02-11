@@ -115,7 +115,31 @@ const Room = (() => {
         const specList = document.getElementById('spectator-list');
         specList.innerHTML = currentRoom.spectators.map(pid => {
             const p = currentRoom.players[pid];
-            return p ? `<div>${escapeHtml(p.username)}</div>` : '';
+            if (!p) return '';
+
+            const kickBtn = isOwner && pid !== myId
+                ? (p.isBot
+                    ? `<button class="kick-btn" onclick="Room.removeBot('${pid}')">Kaldır</button>`
+                    : `<button class="kick-btn" onclick="Room.kickPlayer('${pid}')">At</button>`)
+                : '';
+
+            const moveBtns = isOwner
+                ? `<div class="move-btns">
+                    <button class="btn-tiny" onclick="Room.movePlayer('${pid}', 'left')" title="Sol Takım">L</button>
+                    <button class="btn-tiny" onclick="Room.movePlayer('${pid}', 'right')" title="Sağ Takım">R</button>
+                   </div>`
+                : '';
+
+            return `
+                <div class="player-item spectator-item">
+                  <div class="player-info" style="flex:1; display:flex; align-items:center; gap:5px;">
+                     <span>${escapeHtml(p.username)}</span>
+                     ${pid === currentRoom.ownerId ? '<span style="font-size:11px;">👑</span>' : ''}
+                  </div>
+                  ${moveBtns}
+                  ${kickBtn}
+                </div>
+            `;
         }).join('');
 
         // Colors

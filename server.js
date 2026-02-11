@@ -207,13 +207,22 @@ function handleLeaveRoom(ws, player, msg) {
 }
 
 function handleJoinTeam(ws, player, msg) {
-    const result = roomManager.joinTeam(player.roomId, player.id, msg.team);
+    const result = roomManager.joinTeam(player.roomId, player.id, player.id, msg.team);
     if (result.error) {
         send(ws, { type: 'error', message: result.error });
         return;
     }
     broadcast(player.roomId, { type: 'roomUpdate', room: roomManager.getRoomState(player.roomId) });
     send(ws, { type: 'roomUpdate', room: roomManager.getRoomState(player.roomId) });
+}
+
+function handleMovePlayer(ws, player, msg) {
+    const result = roomManager.joinTeam(player.roomId, player.id, msg.targetId, msg.team);
+    if (result.error) {
+        send(ws, { type: 'error', message: result.error });
+        return;
+    }
+    broadcast(player.roomId, { type: 'roomUpdate', room: roomManager.getRoomState(player.roomId) });
 }
 
 function handleKickPlayer(ws, player, msg) {

@@ -158,7 +158,7 @@ class RoomManager {
 
         const players = {};
         for (const [id, p] of room.players) {
-            players[id] = { id: p.id, username: p.username };
+            players[id] = { id: p.id, username: p.username, isBot: !!p.isBot };
         }
 
         return {
