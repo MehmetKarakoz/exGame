@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Haxball benzeri 2D online multiplayer futbol oyunu - Tarayıcıdan oyna!">
+  <title>⚽ Futbol Online</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- LOGIN SCREEN -->
+  <div id="screen-login" class="screen active">
+    <div class="login-container">
+      <div class="login-logo">
+        <div class="logo-ball">⚽</div>
+        <h1>Futbol Online</h1>
+        <p class="tagline">Haxball tarzı 2D multiplayer futbol</p>
+      </div>
+      <div class="login-form glass-panel">
+        <input type="text" id="username-input" placeholder="Kullanıcı adını gir..." maxlength="16" autocomplete="off">
+        <button id="login-btn" class="btn btn-primary">
+          <span>Oyuna Gir</span>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M5 12h14m-4-4l4 4-4 4"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOBBY SCREEN -->
+  <div id="screen-lobby" class="screen">
+    <div class="lobby-container">
+      <header class="lobby-header">
+        <div class="header-left">
+          <span class="logo-mini">⚽</span>
+          <h2>Futbol Online</h2>
+        </div>
+        <div class="header-right">
+          <span id="lobby-username" class="username-badge"></span>
+        </div>
+      </header>
+
+      <div class="lobby-content">
+        <!-- Room List -->
+        <div class="lobby-section">
+          <div class="section-header">
+            <h3>🏟️ Odalar</h3>
+            <button id="refresh-rooms-btn" class="btn btn-sm btn-outline">Yenile</button>
+          </div>
+          <div id="room-list" class="room-list">
+            <div class="empty-state">Henüz oda yok. İlk odayı oluştur!</div>
+          </div>
+        </div>
+
+        <!-- Create Room -->
+        <div class="lobby-section">
+          <div class="section-header">
+            <h3>➕ Oda Oluştur</h3>
+          </div>
+          <div class="create-room-form glass-panel">
+            <input type="text" id="room-name-input" placeholder="Oda adı" maxlength="30">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Max Oyuncu</label>
+                <select id="room-max-players">
+                  <option value="4">4</option>
+                  <option value="6" selected>6</option>
+                  <option value="8">8</option>
+                  <option value="10">10</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Şifre (opsiyonel)</label>
+                <input type="password" id="room-password-input" placeholder="Şifre">
+              </div>
+            </div>
+            <button id="create-room-btn" class="btn btn-primary">Oda Oluştur</button>
+          </div>
+        </div>
+
+        <!-- Tournaments -->
+        <div class="lobby-section">
+          <div class="section-header">
+            <h3>🏆 Turnuvalar</h3>
+            <button id="refresh-tournaments-btn" class="btn btn-sm btn-outline">Yenile</button>
+          </div>
+          <div id="tournament-list" class="room-list">
+            <div class="empty-state">Aktif turnuva yok</div>
+          </div>
+          <div class="create-room-form glass-panel" style="margin-top: 12px;">
+            <input type="text" id="tournament-name-input" placeholder="Turnuva adı" maxlength="30">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Takım Sayısı</label>
+                <select id="tournament-team-count">
+                  <option value="4" selected>4</option>
+                  <option value="8">8</option>
+                </select>
+              </div>
+            </div>
+            <button id="create-tournament-btn" class="btn btn-accent">Turnuva Oluştur</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROOM SCREEN -->
+  <div id="screen-room" class="screen">
+    <div class="room-container">
+      <header class="room-header">
+        <button id="leave-room-btn" class="btn btn-sm btn-outline">← Lobiye Dön</button>
+        <h2 id="room-title">Oda</h2>
+        <span id="room-owner-badge" class="owner-badge" style="display:none;">👑 Oda Sahibi</span>
+      </header>
+
+      <div class="room-content">
+        <!-- Teams -->
+        <div class="teams-container">
+          <!-- LEFT TEAM -->
+          <div class="team-panel team-left">
+            <div class="team-header">
+              <div class="team-color-indicator" id="team-left-color" style="background:#3B82F6;"></div>
+              <h3 id="team-left-name">Mavi Takım</h3>
+              <span class="team-count" id="team-left-count">0</span>
+            </div>
+            <div id="team-left-players" class="team-players"></div>
+            <button class="btn btn-team btn-team-left" data-team="left">Sol Takıma Katıl</button>
+          </div>
+
+          <!-- SPECTATORS -->
+          <div class="spectator-panel">
+            <h4>👁️ İzleyiciler</h4>
+            <div id="spectator-list" class="spectator-list"></div>
+            <button class="btn btn-team btn-spectator" data-team="spectator">İzle</button>
+          </div>
+
+          <!-- RIGHT TEAM -->
+          <div class="team-panel team-right">
+            <div class="team-header">
+              <div class="team-color-indicator" id="team-right-color" style="background:#EF4444;"></div>
+              <h3 id="team-right-name">Kırmızı Takım</h3>
+              <span class="team-count" id="team-right-count">0</span>
+            </div>
+            <div id="team-right-players" class="team-players"></div>
+            <button class="btn btn-team btn-team-right" data-team="right">Sağ Takıma Katıl</button>
+          </div>
+        </div>
+
+        <!-- Room Settings (Owner Only) -->
+        <div id="room-settings" class="room-settings glass-panel" style="display:none;">
+          <h4>⚙️ Oda Ayarları</h4>
+          <div class="settings-row">
+            <div class="form-group">
+              <label>Maç Süresi</label>
+              <select id="match-duration-select">
+                <option value="180">3 Dakika</option>
+                <option value="300" selected>5 Dakika</option>
+                <option value="600">10 Dakika</option>
+              </select>
+            </div>
+          </div>
+          <div class="settings-row">
+            <div class="form-group">
+              <label>Sol Takım Forma</label>
+              <input type="color" id="color-left-jersey" value="#3B82F6">
+            </div>
+            <div class="form-group">
+              <label>Sol Takım Şort</label>
+              <input type="color" id="color-left-shorts" value="#1E40AF">
+            </div>
+            <div class="form-group">
+              <label>Sağ Takım Forma</label>
+              <input type="color" id="color-right-jersey" value="#EF4444">
+            </div>
+            <div class="form-group">
+              <label>Sağ Takım Şort</label>
+              <input type="color" id="color-right-shorts" value="#991B1B">
+            </div>
+          </div>
+          <button id="start-match-btn" class="btn btn-primary btn-large">🏁 Maçı Başlat</button>
+        </div>
+      </div>
+
+      <!-- Chat -->
+      <div class="chat-panel glass-panel">
+        <div id="chat-messages" class="chat-messages"></div>
+        <div class="chat-input-row">
+          <input type="text" id="chat-input" placeholder="Mesaj yaz..." maxlength="200">
+          <button id="chat-send-btn" class="btn btn-sm btn-primary">Gönder</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GAME SCREEN -->
+  <div id="screen-game" class="screen">
+    <div class="game-container">
+      <!-- Game HUD -->
+      <div class="game-hud">
+        <div class="hud-team hud-team-left">
+          <span id="hud-team-left-name">Mavi Takım</span>
+          <span id="hud-score-left" class="hud-score">0</span>
+        </div>
+        <div class="hud-center">
+          <span id="hud-timer" class="hud-timer">5:00</span>
+        </div>
+        <div class="hud-team hud-team-right">
+          <span id="hud-score-right" class="hud-score">0</span>
+          <span id="hud-team-right-name">Kırmızı Takım</span>
+        </div>
+      </div>
+
+      <!-- Canvas -->
+      <canvas id="game-canvas"></canvas>
+
+      <!-- Shot Power Bar -->
+      <div id="shot-power-bar" class="shot-power-bar" style="display:none;">
+        <div id="shot-power-fill" class="shot-power-fill"></div>
+      </div>
+
+      <!-- Countdown Overlay -->
+      <div id="countdown-overlay" class="countdown-overlay" style="display:none;">
+        <span id="countdown-number" class="countdown-number">3</span>
+      </div>
+
+      <!-- Goal Overlay -->
+      <div id="goal-overlay" class="goal-overlay" style="display:none;">
+        <span class="goal-text">⚽ GOL!</span>
+      </div>
+
+      <!-- Match End Overlay -->
+      <div id="match-end-overlay" class="match-end-overlay" style="display:none;">
+        <div class="match-end-content glass-panel">
+          <h2 id="match-end-title">Maç Bitti!</h2>
+          <div id="match-end-score" class="match-end-score"></div>
+          <button id="match-end-btn" class="btn btn-primary">Lobiye Dön</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOURNAMENT SCREEN -->
+  <div id="screen-tournament" class="screen">
+    <div class="tournament-container">
+      <header class="room-header">
+        <button id="leave-tournament-btn" class="btn btn-sm btn-outline">← Lobiye Dön</button>
+        <h2 id="tournament-title">Turnuva</h2>
+      </header>
+      <div id="tournament-bracket" class="tournament-bracket"></div>
+      <div id="tournament-champion" class="tournament-champion" style="display:none;">
+        <h2>🏆 Şampiyon</h2>
+        <span id="champion-name"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast" style="display:none;"></div>
+
+  <script src="js/network.js"></script>
+  <script src="js/lobby.js"></script>
+  <script src="js/room.js"></script>
+  <script src="js/renderer.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/tournament.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
