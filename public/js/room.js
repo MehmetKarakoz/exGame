@@ -231,5 +231,5 @@ const Room = (() => {
         return div.innerHTML;
     }
 
-    return { init, setRoom, getRoom, kickPlayer };
+    return { init, setRoom, getRoom, kickPlayer, removeBot, movePlayer };
 })();
