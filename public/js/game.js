@@ -40,6 +40,7 @@ const Game = (() => {
         // Input
         document.addEventListener('keydown', onKeyDown);
         document.addEventListener('keyup', onKeyUp);
+        document.addEventListener('mousemove', onMouseMove);
 
         // Network handlers
         Network.on('gameState', onGameState);
@@ -56,6 +57,7 @@ const Game = (() => {
         if (animFrameId) cancelAnimationFrame(animFrameId);
         document.removeEventListener('keydown', onKeyDown);
         document.removeEventListener('keyup', onKeyUp);
+        document.removeEventListener('mousemove', onMouseMove);
         Network.off('gameState', onGameState);
         Network.off('countdown', onCountdown);
         Network.off('goal', onGoal);
@@ -120,6 +122,18 @@ const Game = (() => {
         if (changed) {
             Network.send({ type: 'input', input });
         }
+    }
+
+    function onMouseMove(e) {
+        if (!running) return;
+        const canvas = document.getElementById('game-canvas');
+        const rect = canvas.getBoundingClientRect();
+
+        const scaleX = 1200 / rect.width;
+        const scaleY = 600 / rect.height;
+
+        input.mouseX = (e.clientX - rect.left) * scaleX;
+        input.mouseY = (e.clientY - rect.top) * scaleY;
     }
 
     function onGameState(msg) {
