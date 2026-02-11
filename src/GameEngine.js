@@ -96,7 +96,10 @@ class GameEngine {
     tick() {
         if (this.paused) return;
 
-        const dt = 1; // fixed timestep
+        const dt = 1;
+
+        // Update Bots
+        this.updateBots();
 
         // Update players
         for (const pid in this.players) {
@@ -108,85 +111,31 @@ class GameEngine {
             if (p.input.left) p.vx -= C.PLAYER_ACCELERATION;
             if (p.input.right) p.vx += C.PLAYER_ACCELERATION;
 
-            // Apply friction
             p.vx *= C.PLAYER_FRICTION;
             p.vy *= C.PLAYER_FRICTION;
 
-            // Clamp speed
             const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
             if (speed > C.PLAYER_MAX_SPEED) {
                 p.vx = (p.vx / speed) * C.PLAYER_MAX_SPEED;
                 p.vy = (p.vy / speed) * C.PLAYER_MAX_SPEED;
             }
 
-            // Update position
             p.x += p.vx * dt;
             p.y += p.vy * dt;
 
-            // Clamp to field
             p.x = Math.max(C.FIELD_PADDING + p.radius, Math.min(C.FIELD_WIDTH - C.FIELD_PADDING - p.radius, p.x));
             p.y = Math.max(C.FIELD_PADDING + p.radius, Math.min(C.FIELD_HEIGHT - C.FIELD_PADDING - p.radius, p.y));
 
-            // Shot charging
             if (p.input.shoot) {
                 p.shootHoldTime += C.TICK_INTERVAL / 1000;
             } else if (p.shootHoldTime > 0) {
-                // Release shot
                 this.performShot(p);
                 p.shootHoldTime = 0;
             }
         }
 
-        // Update ball
-        this.ball.vx *= C.BALL_FRICTION;
-        this.ball.vy *= C.BALL_FRICTION;
-
-        // Clamp ball speed
-        const ballSpeed = Math.sqrt(this.ball.vx * this.ball.vx + this.ball.vy * this.ball.vy);
-        if (ballSpeed > C.BALL_MAX_SPEED) {
-            this.ball.vx = (this.ball.vx / ballSpeed) * C.BALL_MAX_SPEED;
-            this.ball.vy = (this.ball.vy / ballSpeed) * C.BALL_MAX_SPEED;
-        }
-
-        this.ball.x += this.ball.vx * dt;
-        this.ball.y += this.ball.vy * dt;
-
-        // Ball–wall collisions (top & bottom)
-        if (this.ball.y - this.ball.radius < C.FIELD_PADDING) {
-            this.ball.y = C.FIELD_PADDING + this.ball.radius;
-            this.ball.vy *= -0.8;
-        }
-        if (this.ball.y + this.ball.radius > C.FIELD_HEIGHT - C.FIELD_PADDING) {
-            this.ball.y = C.FIELD_HEIGHT - C.FIELD_PADDING - this.ball.radius;
-            this.ball.vy *= -0.8;
-        }
-
-        // Ball–wall collisions (left & right) — but check for goal
-        const goalTop = C.FIELD_HEIGHT / 2 - C.GOAL_HEIGHT / 2;
-        const goalBottom = C.FIELD_HEIGHT / 2 + C.GOAL_HEIGHT / 2;
-        const inGoalY = this.ball.y > goalTop && this.ball.y < goalBottom;
-
-        // Left wall
-        if (this.ball.x - this.ball.radius < C.FIELD_PADDING) {
-            if (inGoalY) {
-                // GOAL for right team!
-                if (this.onGoal) this.onGoal('right');
-                return;
-            }
-            this.ball.x = C.FIELD_PADDING + this.ball.radius;
-            this.ball.vx *= -0.8;
-        }
-
-        // Right wall
-        if (this.ball.x + this.ball.radius > C.FIELD_WIDTH - C.FIELD_PADDING) {
-            if (inGoalY) {
-                // GOAL for left team!
-                if (this.onGoal) this.onGoal('left');
-                return;
-            }
-            this.ball.x = C.FIELD_WIDTH - C.FIELD_PADDING - this.ball.radius;
-            this.ball.vx *= -0.8;
-        }
+        // Update Ball
+        this.updateBall();
 
         // Goal post collisions
         this.handleGoalPostCollisions();
@@ -205,9 +154,69 @@ class GameEngine {
             }
         }
 
-        // Send state
         if (this.onUpdate) {
             this.onUpdate(this.getState());
+        }
+    }
+
+    updateBall() {
+        // Apply spin/curve
+        if (this.ball.spin && (Math.abs(this.ball.spin.x) > 0.01 || Math.abs(this.ball.spin.y) > 0.01)) {
+            // Falso effect: side force perpendicular to velocity
+            const speed = Math.sqrt(this.ball.vx * this.ball.vx + this.ball.vy * this.ball.vy);
+            if (speed > 1) {
+                // Direction of curve is influenced by the spin vector
+                this.ball.vx += this.ball.spin.x * C.CURVE_STRENGTH;
+                this.ball.vy += this.ball.spin.y * C.CURVE_STRENGTH;
+            }
+            this.ball.spin.x *= C.CURVE_FRICTION;
+            this.ball.spin.y *= C.CURVE_FRICTION;
+        }
+
+        this.ball.vx *= C.BALL_FRICTION;
+        this.ball.vy *= C.BALL_FRICTION;
+
+        const ballSpeed = Math.sqrt(this.ball.vx * this.ball.vx + this.ball.vy * this.ball.vy);
+        if (ballSpeed > C.BALL_MAX_SPEED) {
+            this.ball.vx = (this.ball.vx / ballSpeed) * C.BALL_MAX_SPEED;
+            this.ball.vy = (this.ball.vy / ballSpeed) * C.BALL_MAX_SPEED;
+        }
+
+        this.ball.x += this.ball.vx;
+        this.ball.y += this.ball.vy;
+
+        const goalTop = C.FIELD_HEIGHT / 2 - C.GOAL_HEIGHT / 2;
+        const goalBottom = C.FIELD_HEIGHT / 2 + C.GOAL_HEIGHT / 2;
+        const inGoalY = this.ball.y > goalTop - 5 && this.ball.y < goalBottom + 5;
+
+        // Top/Bottom walls
+        if (this.ball.y - this.ball.radius < C.FIELD_PADDING) {
+            this.ball.y = C.FIELD_PADDING + this.ball.radius;
+            this.ball.vy *= -0.8;
+        }
+        if (this.ball.y + this.ball.radius > C.FIELD_HEIGHT - C.FIELD_PADDING) {
+            this.ball.y = C.FIELD_HEIGHT - C.FIELD_PADDING - this.ball.radius;
+            this.ball.vy *= -0.8;
+        }
+
+        // Left wall/Goal
+        if (this.ball.x - this.ball.radius < C.FIELD_PADDING) {
+            if (inGoalY) {
+                if (this.onGoal) this.onGoal('right');
+                return;
+            }
+            this.ball.x = C.FIELD_PADDING + this.ball.radius;
+            this.ball.vx *= -0.8;
+        }
+
+        // Right wall/Goal
+        if (this.ball.x + this.ball.radius > C.FIELD_WIDTH - C.FIELD_PADDING) {
+            if (inGoalY) {
+                if (this.onGoal) this.onGoal('left');
+                return;
+            }
+            this.ball.x = C.FIELD_WIDTH - C.FIELD_PADDING - this.ball.radius;
+            this.ball.vx *= -0.8;
         }
     }
 
@@ -216,7 +225,9 @@ class GameEngine {
         const dy = this.ball.y - player.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
 
-        if (dist > C.SHOT_RANGE + player.radius + this.ball.radius) return;
+        // Required distance is much smaller now (must be very close or touching)
+        const contactDist = player.radius + this.ball.radius + 5;
+        if (dist > contactDist) return;
 
         const power = Math.min(
             C.SHOT_MIN_POWER + player.shootHoldTime * C.SHOT_CHARGE_RATE,
@@ -226,40 +237,45 @@ class GameEngine {
         const nx = dx / dist;
         const ny = dy / dist;
 
-        this.ball.vx += nx * power;
-        this.ball.vy += ny * power;
+        this.ball.vx = nx * power;
+        this.ball.vy = ny * power;
+
+        // Apply curve (falso) based on mouse direction if available
+        if (player.input.mouseX !== undefined && player.input.mouseY !== undefined) {
+            const mdx = player.input.mouseX - player.x;
+            const mdy = player.input.mouseY - player.y;
+            const mDist = Math.sqrt(mdx * mdx + mdy * mdy);
+            if (mDist > 0) {
+                this.ball.spin = {
+                    x: (mdx / mDist) * 2,
+                    y: (mdy / mDist) * 2
+                };
+            }
+        }
     }
 
-    handleGoalPostCollisions() {
-        const goalTop = C.FIELD_HEIGHT / 2 - C.GOAL_HEIGHT / 2;
-        const goalBottom = C.FIELD_HEIGHT / 2 + C.GOAL_HEIGHT / 2;
+    updateBots() {
+        for (const pid in this.players) {
+            const p = this.players[pid];
+            if (p.isBot) {
+                const dx = this.ball.x - p.x;
+                const dy = this.ball.y - p.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
 
-        // 4 goal posts (corners of both goals)
-        const posts = [
-            { x: C.FIELD_PADDING, y: goalTop },
-            { x: C.FIELD_PADDING, y: goalBottom },
-            { x: C.FIELD_WIDTH - C.FIELD_PADDING, y: goalTop },
-            { x: C.FIELD_WIDTH - C.FIELD_PADDING, y: goalBottom }
-        ];
+                // Simple AI: Move toward ball
+                p.input.left = dx < -10;
+                p.input.right = dx > 10;
+                p.input.up = dy < -10;
+                p.input.down = dy > 10;
 
-        const postRadius = 4;
-
-        for (const post of posts) {
-            const dx = this.ball.x - post.x;
-            const dy = this.ball.y - post.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            const minDist = this.ball.radius + postRadius;
-
-            if (dist < minDist && dist > 0) {
-                const nx = dx / dist;
-                const ny = dy / dist;
-                const overlap = minDist - dist;
-                this.ball.x += nx * overlap;
-                this.ball.y += ny * overlap;
-
-                const dot = this.ball.vx * nx + this.ball.vy * ny;
-                this.ball.vx -= 2 * dot * nx * 0.8;
-                this.ball.vy -= 2 * dot * ny * 0.8;
+                // Shoot if close
+                if (dist < C.SHOT_RANGE + 10) {
+                    p.input.shoot = true;
+                    // Reset shoot after some time or immediately for simple bot
+                    if (p.shootHoldTime > 0.1) p.input.shoot = false;
+                } else {
+                    p.input.shoot = false;
+                }
             }
         }
     }
@@ -273,10 +289,10 @@ class GameEngine {
         if (dist < minDist && dist > 0) {
             const nx = dx / dist;
             const ny = dy / dist;
-
-            // Separate
             const overlap = minDist - dist;
+
             if (isBallCollision) {
+                // Fix: Stronger separation for ball to prevent clipping
                 b.x += nx * overlap;
                 b.y += ny * overlap;
             } else {
@@ -286,20 +302,46 @@ class GameEngine {
                 b.y += ny * overlap * 0.5;
             }
 
-            // Elastic collision
-            const massA = isBallCollision ? C.PLAYER_MASS : C.PLAYER_MASS;
-            const massB = isBallCollision ? C.BALL_MASS : C.PLAYER_MASS;
-
             const dvx = a.vx - b.vx;
             const dvy = a.vy - b.vy;
             const dvDotN = dvx * nx + dvy * ny;
 
             if (dvDotN > 0) {
-                const j = (2 * dvDotN) / (massA + massB);
-                a.vx -= j * massB * nx * 0.9;
-                a.vy -= j * massB * ny * 0.9;
-                b.vx += j * massA * nx * 0.9;
-                b.vy += j * massA * ny * 0.9;
+                const j = (2 * dvDotN) / (C.PLAYER_MASS + (isBallCollision ? C.BALL_MASS : C.PLAYER_MASS));
+                a.vx -= j * (isBallCollision ? C.BALL_MASS : C.PLAYER_MASS) * nx * 0.9;
+                a.vy -= j * (isBallCollision ? C.BALL_MASS : C.PLAYER_MASS) * ny * 0.9;
+                b.vx += j * C.PLAYER_MASS * nx * 0.9;
+                b.vy += j * C.PLAYER_MASS * ny * 0.9;
+            }
+        }
+    }
+
+    handleGoalPostCollisions() {
+        const goalTop = C.FIELD_HEIGHT / 2 - C.GOAL_HEIGHT / 2;
+        const goalBottom = C.FIELD_HEIGHT / 2 + C.GOAL_HEIGHT / 2;
+        const posts = [
+            { x: C.FIELD_PADDING, y: goalTop },
+            { x: C.FIELD_PADDING, y: goalBottom },
+            { x: C.FIELD_WIDTH - C.FIELD_PADDING, y: goalTop },
+            { x: C.FIELD_WIDTH - C.FIELD_PADDING, y: goalBottom }
+        ];
+        const postRadius = 6;
+
+        for (const post of posts) {
+            const dx = this.ball.x - post.x;
+            const dy = this.ball.y - post.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const minDist = this.ball.radius + postRadius;
+
+            if (dist < minDist && dist > 0) {
+                const nx = dx / dist;
+                const ny = dy / dist;
+                this.ball.x = post.x + nx * minDist;
+                this.ball.y = post.y + ny * minDist;
+
+                const dot = this.ball.vx * nx + this.ball.vy * ny;
+                this.ball.vx -= 2 * dot * nx * 0.8;
+                this.ball.vy -= 2 * dot * ny * 0.8;
             }
         }
     }
@@ -309,6 +351,7 @@ class GameEngine {
         this.ball.y = C.FIELD_HEIGHT / 2;
         this.ball.vx = 0;
         this.ball.vy = 0;
+        this.ball.spin = { x: 0, y: 0 };
     }
 
     resetPositions() {
@@ -350,7 +393,8 @@ class GameEngine {
                 vx: Math.round(p.vx * 100) / 100,
                 vy: Math.round(p.vy * 100) / 100,
                 number: p.number,
-                shootHoldTime: p.shootHoldTime
+                shootHoldTime: p.shootHoldTime,
+                isBot: p.isBot
             });
         }
         return {

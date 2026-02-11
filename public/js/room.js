@@ -23,6 +23,11 @@ const Room = (() => {
             Network.send({ type: 'startMatch' });
         });
 
+        // Add Bot
+        document.getElementById('add-bot-btn').addEventListener('click', () => {
+            Network.send({ type: 'addBot' });
+        });
+
         // Match duration
         document.getElementById('match-duration-select').addEventListener('change', (e) => {
             Network.send({ type: 'setMatchDuration', duration: parseInt(e.target.value) });
@@ -99,7 +104,7 @@ const Room = (() => {
         const isOwner = currentRoom.ownerId === myId;
 
         document.getElementById('room-title').textContent = currentRoom.name;
-        document.getElementById('room-owner-badge').style.display = isOwner ? 'inline-block' : 'none';
+        document.getElementById('room-owner-controls').style.display = isOwner ? 'flex' : 'none';
         document.getElementById('room-settings').style.display = isOwner ? 'block' : 'none';
 
         // Teams
@@ -137,7 +142,9 @@ const Room = (() => {
             const p = currentRoom.players[pid];
             if (!p) return '';
             const kickBtn = isOwner && pid !== myId
-                ? `<button class="kick-btn" onclick="Room.kickPlayer('${pid}')">At</button>`
+                ? (p.isBot
+                    ? `<button class="kick-btn" onclick="Room.removeBot('${pid}')">Kaldır</button>`
+                    : `<button class="kick-btn" onclick="Room.kickPlayer('${pid}')">At</button>`)
                 : '';
             return `
         <div class="player-item">
@@ -152,6 +159,10 @@ const Room = (() => {
 
     function kickPlayer(targetId) {
         Network.send({ type: 'kickPlayer', targetId });
+    }
+
+    function removeBot(botId) {
+        Network.send({ type: 'removeBot', botId });
     }
 
     function sendChat() {

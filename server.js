@@ -130,6 +130,12 @@ function handleMessage(ws, player, msg) {
         case 'chat':
             handleChat(ws, player, msg);
             break;
+        case 'addBot':
+            handleAddBot(ws, player, msg);
+            break;
+        case 'removeBot':
+            handleRemoveBot(ws, player, msg);
+            break;
     }
 }
 
@@ -407,6 +413,24 @@ function handleStartTournament(ws, player, msg) {
         tournamentId: msg.tournamentId,
         bracket: result.bracket
     });
+}
+
+function handleAddBot(ws, player, msg) {
+    const result = roomManager.addBot(player.roomId, player.id);
+    if (result.error) {
+        send(ws, { type: 'error', message: result.error });
+        return;
+    }
+    broadcast(player.roomId, { type: 'roomUpdate', room: roomManager.getRoomState(player.roomId) });
+}
+
+function handleRemoveBot(ws, player, msg) {
+    const result = roomManager.removeBot(player.roomId, player.id, msg.botId);
+    if (result.error) {
+        send(ws, { type: 'error', message: result.error });
+        return;
+    }
+    broadcast(player.roomId, { type: 'roomUpdate', room: roomManager.getRoomState(player.roomId) });
 }
 
 // ---- Disconnect ----

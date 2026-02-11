@@ -52,6 +52,8 @@ module.exports = {
   // Room
   MAX_PLAYERS_PER_ROOM: 10,
   MIN_PLAYERS_PER_ROOM: 2,
+  BOT_REACTION_DELAY: 5, // Ticks (approx 80ms)
+  BOT_ACCURACY: 0.95,
 
   // Team colors (defaults)
   TEAM_LEFT_DEFAULT: {

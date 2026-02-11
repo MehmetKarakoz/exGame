@@ -177,6 +177,39 @@ class RoomManager {
         };
     }
 
+    addBot(roomId, requesterId) {
+        const room = this.rooms.get(roomId);
+        if (!room) return { error: 'Oda bulunamadı' };
+        if (room.ownerId !== requesterId) return { error: 'Yetkiniz yok' };
+        if (room.players.size >= room.maxPlayers) return { error: 'Oda dolu' };
+
+        const botId = `bot-${uuidv4().slice(0, 4)}`;
+        const bot = {
+            id: botId,
+            username: `Bot ${room.players.size}`,
+            isBot: true,
+            ws: null,
+            roomId: roomId
+        };
+
+        room.players.set(botId, bot);
+        room.spectators.push(botId);
+        return { success: true, botId };
+    }
+
+    removeBot(roomId, requesterId, botId) {
+        const room = this.rooms.get(roomId);
+        if (!room) return { error: 'Oda bulunamadı' };
+        if (room.ownerId !== requesterId) return { error: 'Yetkiniz yok' };
+
+        room.players.delete(botId);
+        room.teamLeft.players = room.teamLeft.players.filter(id => id !== botId);
+        room.teamRight.players = room.teamRight.players.filter(id => id !== botId);
+        room.spectators = room.spectators.filter(id => id !== botId);
+
+        return { success: true };
+    }
+
     getRoom(roomId) {
         return this.rooms.get(roomId);
     }
