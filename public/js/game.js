@@ -5,7 +5,7 @@ const Game = (() => {
     let running = false;
     let roomData = null;
     let lastState = null;
-    let input = { up: false, down: false, left: false, right: false, shoot: false };
+    let input = { up: false, down: false, left: false, right: false, shoot: false, curveLeft: false, curveRight: false };
     let animFrameId = null;
     let shootStartTime = 0;
 
@@ -91,6 +91,12 @@ const Game = (() => {
                     changed = true;
                 }
                 break;
+            case 'o': case 'O':
+                if (!input.curveLeft) { input.curveLeft = true; changed = true; }
+                break;
+            case 'p': case 'P':
+                if (!input.curveRight) { input.curveRight = true; changed = true; }
+                break;
         }
 
         if (changed) {
@@ -117,6 +123,10 @@ const Game = (() => {
                 document.getElementById('shot-power-fill').style.width = '0%';
                 changed = true;
                 break;
+            case 'o': case 'O':
+                input.curveLeft = false; changed = true; break;
+            case 'p': case 'P':
+                input.curveRight = false; changed = true; break;
         }
 
         if (changed) {

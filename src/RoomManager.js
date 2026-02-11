@@ -83,10 +83,15 @@ class RoomManager {
         return { success: true };
     }
 
-    joinTeam(roomId, playerId, team) {
+    joinTeam(roomId, requesterId, playerId, team) {
         const room = this.rooms.get(roomId);
         if (!room) return { error: 'Oda bulunamadı' };
         if (room.state === 'playing') return { error: 'Maç devam ediyor, takım değiştiremezsiniz' };
+
+        // Allow if it's the player themselves OR if the requester is the room owner
+        if (requesterId !== playerId && room.ownerId !== requesterId) {
+            return { error: 'Yetkiniz yok' };
+        }
 
         // Remove from current team/spectators
         room.teamLeft.players = room.teamLeft.players.filter(id => id !== playerId);

@@ -93,6 +93,9 @@ function handleMessage(ws, player, msg) {
         case 'joinTeam':
             handleJoinTeam(ws, player, msg);
             break;
+        case 'movePlayer':
+            handleMovePlayer(ws, player, msg);
+            break;
         case 'kickPlayer':
             handleKickPlayer(ws, player, msg);
             break;

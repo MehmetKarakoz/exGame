@@ -21,7 +21,8 @@ class GameEngine {
             y: C.FIELD_HEIGHT / 2,
             vx: 0,
             vy: 0,
-            radius: C.BALL_RADIUS
+            radius: C.BALL_RADIUS,
+            spin: { x: 0, y: 0 }
         };
 
         // Initialize players
@@ -192,11 +193,10 @@ class GameEngine {
         // Top/Bottom walls
         if (this.ball.y - this.ball.radius < C.FIELD_PADDING) {
             this.ball.y = C.FIELD_PADDING + this.ball.radius;
-            this.ball.vy *= -0.8;
-        }
-        if (this.ball.y + this.ball.radius > C.FIELD_HEIGHT - C.FIELD_PADDING) {
+            this.ball.vy = Math.abs(this.ball.vy) * 0.8; // Bounce down
+        } else if (this.ball.y + this.ball.radius > C.FIELD_HEIGHT - C.FIELD_PADDING) {
             this.ball.y = C.FIELD_HEIGHT - C.FIELD_PADDING - this.ball.radius;
-            this.ball.vy *= -0.8;
+            this.ball.vy = -Math.abs(this.ball.vy) * 0.8; // Bounce up
         }
 
         // Left wall/Goal
@@ -206,18 +206,20 @@ class GameEngine {
                 return;
             }
             this.ball.x = C.FIELD_PADDING + this.ball.radius;
-            this.ball.vx *= -0.8;
-        }
-
-        // Right wall/Goal
-        if (this.ball.x + this.ball.radius > C.FIELD_WIDTH - C.FIELD_PADDING) {
+            this.ball.vx = Math.abs(this.ball.vx) * 0.8; // Bounce right
+        } else if (this.ball.x + this.ball.radius > C.FIELD_WIDTH - C.FIELD_PADDING) {
+            // Right wall/Goal
             if (inGoalY) {
                 if (this.onGoal) this.onGoal('left');
                 return;
             }
             this.ball.x = C.FIELD_WIDTH - C.FIELD_PADDING - this.ball.radius;
-            this.ball.vx *= -0.8;
+            this.ball.vx = -Math.abs(this.ball.vx) * 0.8; // Bounce left
         }
+
+        // Final safety clamp for field bounds
+        this.ball.x = Math.max(C.FIELD_PADDING - 20, Math.min(C.FIELD_WIDTH - C.FIELD_PADDING + 20, this.ball.x));
+        this.ball.y = Math.max(C.FIELD_PADDING - 20, Math.min(C.FIELD_HEIGHT - C.FIELD_PADDING + 20, this.ball.y));
     }
 
     performShot(player) {
@@ -240,17 +242,32 @@ class GameEngine {
         this.ball.vx = nx * power;
         this.ball.vy = ny * power;
 
-        // Apply curve (falso) based on mouse direction if available
-        if (player.input.mouseX !== undefined && player.input.mouseY !== undefined) {
+        // Apply curve (falso)
+        let spinX = 0;
+        let spinY = 0;
+
+        // Keyboard curve (O/P keys) - Perpendicular to shot direction
+        if (player.input.curveLeft) {
+            spinX = ny * 3;
+            spinY = -nx * 3;
+        } else if (player.input.curveRight) {
+            spinX = -ny * 3;
+            spinY = nx * 3;
+        }
+
+        // Mouse curve - Directional spin
+        if (player.input.mouseX !== undefined && player.input.mouseY !== undefined && !player.input.curveLeft && !player.input.curveRight) {
             const mdx = player.input.mouseX - player.x;
             const mdy = player.input.mouseY - player.y;
             const mDist = Math.sqrt(mdx * mdx + mdy * mdy);
             if (mDist > 0) {
-                this.ball.spin = {
-                    x: (mdx / mDist) * 2,
-                    y: (mdy / mDist) * 2
-                };
+                spinX = (mdx / mDist) * 2;
+                spinY = (mdy / mDist) * 2;
             }
+        }
+
+        if (spinX !== 0 || spinY !== 0) {
+            this.ball.spin = { x: spinX, y: spinY };
         }
     }
 

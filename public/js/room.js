@@ -146,11 +146,22 @@ const Room = (() => {
                     ? `<button class="kick-btn" onclick="Room.removeBot('${pid}')">Kaldır</button>`
                     : `<button class="kick-btn" onclick="Room.kickPlayer('${pid}')">At</button>`)
                 : '';
+            const moveBtns = isOwner
+                ? `<div class="move-btns">
+                    <button class="btn-tiny" onclick="Room.movePlayer('${pid}', 'left')" title="Sol Takım">L</button>
+                    <button class="btn-tiny" onclick="Room.movePlayer('${pid}', 'spectator')" title="İzle">S</button>
+                    <button class="btn-tiny" onclick="Room.movePlayer('${pid}', 'right')" title="Sağ Takım">R</button>
+                   </div>`
+                : '';
+
             return `
         <div class="player-item">
           <span class="player-number" style="background:${team.jersey};color:${team.number};">${i + 1}</span>
-          <span>${escapeHtml(p.username)}</span>
-          ${pid === currentRoom.ownerId ? '<span style="font-size:11px;">👑</span>' : ''}
+          <div class="player-info" style="flex:1; display:flex; align-items:center; gap:5px; margin-left:5px;">
+             <span>${escapeHtml(p.username)}</span>
+             ${pid === currentRoom.ownerId ? '<span style="font-size:11px;">👑</span>' : ''}
+          </div>
+          ${moveBtns}
           ${kickBtn}
         </div>
       `;
@@ -163,6 +174,10 @@ const Room = (() => {
 
     function removeBot(botId) {
         Network.send({ type: 'removeBot', botId });
+    }
+
+    function movePlayer(targetId, team) {
+        Network.send({ type: 'movePlayer', targetId, team });
     }
 
     function sendChat() {
