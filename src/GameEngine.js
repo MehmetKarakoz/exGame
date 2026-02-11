@@ -126,13 +126,6 @@ class GameEngine {
 
             p.x = Math.max(C.FIELD_PADDING + p.radius, Math.min(C.FIELD_WIDTH - C.FIELD_PADDING - p.radius, p.x));
             p.y = Math.max(C.FIELD_PADDING + p.radius, Math.min(C.FIELD_HEIGHT - C.FIELD_PADDING - p.radius, p.y));
-
-            if (p.input.shoot) {
-                p.shootHoldTime += C.TICK_INTERVAL / 1000;
-            } else if (p.shootHoldTime > 0) {
-                this.performShot(p);
-                p.shootHoldTime = 0;
-            }
         }
 
         // Update Ball
@@ -231,10 +224,8 @@ class GameEngine {
         const contactDist = player.radius + this.ball.radius + 5;
         if (dist > contactDist) return;
 
-        const power = Math.min(
-            C.SHOT_MIN_POWER + player.shootHoldTime * C.SHOT_CHARGE_RATE,
-            C.SHOT_MAX_POWER
-        );
+        // Auto-shot uses max power or a comfortable fixed power
+        const power = C.SHOT_MAX_POWER;
 
         const nx = dx / dist;
         const ny = dy / dist;
@@ -288,8 +279,6 @@ class GameEngine {
                 // Shoot if close
                 if (dist < C.SHOT_RANGE + 10) {
                     p.input.shoot = true;
-                    // Reset shoot after some time or immediately for simple bot
-                    if (p.shootHoldTime > 0.1) p.input.shoot = false;
                 } else {
                     p.input.shoot = false;
                 }
@@ -312,6 +301,8 @@ class GameEngine {
                 // Fix: Stronger separation for ball to prevent clipping
                 b.x += nx * overlap;
                 b.y += ny * overlap;
+                // Trigger auto-shot on contact
+                this.performShot(a);
             } else {
                 a.x -= nx * overlap * 0.5;
                 a.y -= ny * overlap * 0.5;

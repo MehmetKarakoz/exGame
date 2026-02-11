@@ -82,15 +82,6 @@ const Game = (() => {
             case 'd': case 'D': case 'ArrowRight':
                 if (!input.right) { input.right = true; changed = true; }
                 break;
-            case ' ':
-                e.preventDefault();
-                if (!input.shoot) {
-                    input.shoot = true;
-                    shootStartTime = performance.now();
-                    document.getElementById('shot-power-bar').style.display = 'block';
-                    changed = true;
-                }
-                break;
             case 'o': case 'O':
                 if (!input.curveLeft) { input.curveLeft = true; changed = true; }
                 break;
@@ -117,12 +108,6 @@ const Game = (() => {
                 input.left = false; changed = true; break;
             case 'd': case 'D': case 'ArrowRight':
                 input.right = false; changed = true; break;
-            case ' ':
-                input.shoot = false;
-                document.getElementById('shot-power-bar').style.display = 'none';
-                document.getElementById('shot-power-fill').style.width = '0%';
-                changed = true;
-                break;
             case 'o': case 'O':
                 input.curveLeft = false; changed = true; break;
             case 'p': case 'P':
@@ -219,13 +204,6 @@ const Game = (() => {
 
     function renderLoop() {
         if (!running) return;
-
-        // Update shot power bar
-        if (input.shoot) {
-            const elapsed = (performance.now() - shootStartTime) / 1000;
-            const ratio = Math.min(elapsed * 12 / 18, 1);
-            document.getElementById('shot-power-fill').style.width = `${ratio * 100}%`;
-        }
 
         Renderer.render(lastState, roomData);
         animFrameId = requestAnimationFrame(renderLoop);
